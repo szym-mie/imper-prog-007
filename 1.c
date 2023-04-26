@@ -40,7 +40,7 @@ double quad_rect(Func1vFp f1, double a, double b, double c)
 
 double lerp(double a, double b, double r)
 {
-	return a * r + b * (1 - r);
+	return b * r + a * (1 - r);
 }
 
 double quad_rect_left(Func1vFp f1, double a, double b, int n) {  // Prostokatow leftpoint 
@@ -48,10 +48,10 @@ double quad_rect_left(Func1vFp f1, double a, double b, int n) {  // Prostokatow 
 	double sp = a; // start point
 	double ep = a; // end point
 	
-	for (int i = 0; i < n; i++)
+	for (int i = 1; i <= n; i++)
 	{
 		sp = ep;
-		ep = lerp(a, b, (double)n / i);
+		ep = lerp(a, b, (double)i / n);
 		s += quad_rect(f1, sp, ep, sp);	
 	}
 	return s;
@@ -62,10 +62,10 @@ double quad_rect_right(Func1vFp f1, double a, double b, int n) {  // Prostokatow
 	double sp = a; // start point
 	double ep = a; // end point
 	
-	for (int i = 0; i < n; i++)
+	for (int i = 1; i <= n; i++)
 	{
 		sp = ep;
-		ep = lerp(a, b, (double)n / i);
+		ep = lerp(a, b, (double)i / n);
 		s += quad_rect(f1, sp, ep, ep);	
 	}
 	return s;
@@ -76,10 +76,10 @@ double quad_rect_mid(Func1vFp f1, double a, double b, int n) {  // Prostokatow m
 	double sp = a; // start point
 	double ep = a; // end point
 	
-	for (int i = 0; i < n; i++)
+	for (int i = 1; i <= n; i++)
 	{
 		sp = ep;
-		ep = lerp(a, b, (double)n / i);
+		ep = lerp(a, b, (double)i / n);
 		s += quad_rect(f1, sp, ep, (sp + ep) / 2);	
 	}
 	return s;
@@ -91,10 +91,10 @@ double quad_trap(Func1vFp f1, double a, double b, int n) {  // Trapezow
 	double sp = a; // start point
 	double ep = a; // end point
 	
-	for (int i = 0; i < n; i++)
+	for (int i = 1; i <= n; i++)
 	{
 		sp = ep;
-		ep = lerp(a, b, (double)n / i);
+		ep = lerp(a, b, (double)i / n);
 		s += (ep - sp) / 2 * (f1(sp) + f1(ep));	
 	}
 	return s;
@@ -105,10 +105,10 @@ double quad_simpson(Func1vFp f1, double a, double b, int n) {  // Simpsona
 	double sp = a; // start point
 	double ep = a; // end point
 	
-	for (int i = 0; i < n; i++)
+	for (int i = 1; i <= n; i++)
 	{
 		sp = ep;
-		ep = lerp(a, b, (double)n / i);
+		ep = lerp(a, b, (double)i / n);
 		s += (ep - sp) / 6 * (f1(sp) + 4 * f1((sp + ep) / 2) + f1(ep));	
 	}
 	return s;
@@ -125,15 +125,23 @@ QuadratureFp quad_tab[5]={quad_rect_left, quad_rect_right, quad_rect_mid, quad_t
 
 // Oblicza i zwraca wartosc wskazanej indeksem quad_no kwadratury dla wskazanej indeksem fun_no funkcji
 // w przedziale [a,b] z podzialem na n podprzedzialow. 
-double quad_select(int fun_no, int quad_no, double a, double b, int n) {
+double quad_select(int func_no, int quad_no, double a, double b, int n) {
+	return quad_tab[quad_no](func_tab[func_no], a, b, n);
 }
 
 // Algorytm adaptacyjny obliczania kwadratury,
 double recurs(Func1vFp f, double a, double b, double S, double delta, QuadratureFp quad, int level) {
+	double ss = quad(f, a, b, 2);
+	if (ss <= S + delta && ss >= S - delta) return ss;
+	if (level > RECURS_LEVEL_MAX) return nan("");
+	double c = (a + b) / 2;
+	return recurs(f, a, c, S, delta / 2, quad, level + 1) + 
+		recurs(f, c, b, S, delta / 2, quad, level + 1);
 }
 
 // Funkcja inicjująca rekurencję
 double init_recurs(Func1vFp f, double a, double b, double delta, QuadratureFp quad) {
+	return recurs(f, a, b, 0, delta, quad, 0); 
 }
 
 ///////////////////////////////////////////////////////////////
@@ -233,7 +241,7 @@ int main(void)
         scanf("%lf %lf %d", &a, &b, &n);
         for(int q=0; q<5; ++q) {
             for(int f=0; f<4; ++f) {
-                printf("%.5f ",quad_select(f, q, a, b, n));
+                    printf("%.5f ",quad_select(f, q, a, b, n));
             }
             printf("\n");
         }
