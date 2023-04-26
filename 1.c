@@ -218,7 +218,8 @@ int main(void)
         sum=0.;
         recur_quad_rect_mid(&sum, funcNv, n, tvariable, variable_lim, tn, 0, flag?boundNv:NULL);//        recur_quad_rect_mid(&sum, func3v_1, n, tvariable, variable_lim, tn, 0, flag?bound3v_2:NULL);
 //        recur_quad_rect(&sum, funcNv, n, tvariable, variable_lim, tn, tqr, 0, flag?boundNv:NUL
-        break;
+        printf("%.5f\n", sum);
+	break;
     default:
         printf("Numer testu spoza zakresu [1, 7] %d", to_do);
     }
