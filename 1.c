@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <math.h>
 
+#define E 
+
 #define TEST 1   // 1 - dla testowania, 0 - dla sprawdzarki
 
 #define RECURS_LEVEL_MAX  10
@@ -14,32 +16,102 @@
 typedef double (*Func1vFp)(double);  // Definiowanie nazwy dla typu wskaznika do funkcji jedej zmiennej 
 
 double f_poly(double x) {  //    polynomial  a[0]+a[1]x+ ... + a[n]x^n
+	return 2 * pow(x, 5) - 4 * pow(x, 4) + 3.5 * pow(x, 2) + 1.35 * x - 6.25;
 }
 
 double f_rat(double x) {  // Przyklad funkcji podcalkowej Proba z funkcja f(x) = 1/((x-0.5)*(x-0.5)+0.01) w przedziale od 0 do 3.
+	return 1 / (pow(x-0.5, 2) + 0.01);
 }
 
 double f_exp(double x) {  // Przyklad funkcji podcalkowej
+	return 2 * x * exp(-1.5 * x) - 1;
 }
 
 double f_trig(double x) {  // Przyklad funkcji podcalkowej
+	return x * tan(x) - 1;
 }
 
 // Obliczanie kwadratur złożonych dla funkcji jednej zmiennej
 
+double quad_rect(Func1vFp f1, double a, double b, double c)
+{
+	return (b - a) * f1(c);
+}
+
+double lerp(double a, double b, double r)
+{
+	return a * r + b * (1 - r);
+}
+
 double quad_rect_left(Func1vFp f1, double a, double b, int n) {  // Prostokatow leftpoint 
+	double s = 0;
+	double sp = a; // start point
+	double ep = a; // end point
+	
+	for (int i = 0; i < n; i++)
+	{
+		sp = ep;
+		ep = lerp(a, b, (double)n / i);
+		s += quad_rect(f1, sp, ep, sp);	
+	}
+	return s;
 }
 
 double quad_rect_right(Func1vFp f1, double a, double b, int n) {  // Prostokatow rightpoint 
+	double s = 0;
+	double sp = a; // start point
+	double ep = a; // end point
+	
+	for (int i = 0; i < n; i++)
+	{
+		sp = ep;
+		ep = lerp(a, b, (double)n / i);
+		s += quad_rect(f1, sp, ep, ep);	
+	}
+	return s;
 }
 
 double quad_rect_mid(Func1vFp f1, double a, double b, int n) {  // Prostokatow midpoint 
+	double s = 0;
+	double sp = a; // start point
+	double ep = a; // end point
+	
+	for (int i = 0; i < n; i++)
+	{
+		sp = ep;
+		ep = lerp(a, b, (double)n / i);
+		s += quad_rect(f1, sp, ep, (sp + ep) / 2);	
+	}
+	return s;
 }
 
-double quad_trap(Func1vFp func, double a, double b, int n) {  // Trapezow
+
+double quad_trap(Func1vFp f1, double a, double b, int n) {  // Trapezow
+	double s = 0;
+	double sp = a; // start point
+	double ep = a; // end point
+	
+	for (int i = 0; i < n; i++)
+	{
+		sp = ep;
+		ep = lerp(a, b, (double)n / i);
+		s += (ep - sp) / 2 * (f1(sp) + f1(ep));	
+	}
+	return s;
 }
 
-double quad_simpson(Func1vFp f, double a, double b, int n) {  // Simpsona
+double quad_simpson(Func1vFp f1, double a, double b, int n) {  // Simpsona
+	double s = 0;
+	double sp = a; // start point
+	double ep = a; // end point
+	
+	for (int i = 0; i < n; i++)
+	{
+		sp = ep;
+		ep = lerp(a, b, (double)n / i);
+		s += (ep - sp) / 6 * (f1(sp) + 4 * f1((sp + ep) / 2) + f1(ep));	
+	}
+	return s;
 }
 
 // Definiowanie nazwy dla typu wskaznika do funkcji obliczającej kwadraturę funkcji jednej zmiennej  
