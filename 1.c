@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <math.h>
+#include <stdio.h>
+#include <math.h>
 
 #ifndef nan
 double nan(const char *tagp) { return (double)0xffffffff; }
@@ -268,8 +270,8 @@ double dbl_integr_normal_n(Func2vFp f, double x1, double x2, int nx, double y1, 
 ///////////////////////////////////////////////////////////////
 // 7.3 Calki wielokrotne:
 
-typedef double (*FuncNvFp)(const double*, int);
-typedef int (*BoundNvFp)(const double*, int);
+typedef double (*FuncNvFp)(const double *, int);
+typedef int (*BoundNvFp)(const double *, int);
 
 // Przykladowa funkcja trzech zmiennych:
 double func3v(const double v[], int n) {
@@ -298,16 +300,76 @@ int boundNv(const double v[], int n) {
 
 // Obliczanie calek wielokrotnych
 
+struct vec3
+{
+	double x, y, z;
+};
+
+union vec3p
+{
+	double packed[3];
+	struct vec3 vec;
+};
+
 // Oblicza calke potrojna "nad" prostopadloscianem z predykatem wykluczajacym jego czesci (jezeli boundary != NULL).
 // Metoda prostokatow wstecz (rightpoint) wzdluz kazdej zmiennej.
-double trpl_quad_rect(FuncNvFp f, const double variable_lim[][2], const int tn[], BoundNvFp boundary) {     
+double trpl_quad_rect(FuncNvFp f, const double vl[][2], const int tn[], BoundNvFp boundary) {     
+	// TODO dunno why result is different (not a precision issue) despite being right-point method
+	double s = 0;
+	union vec3p vp;
+	struct vec3 *v = &vp.vec;
 
+	int nx = tn[0], ny = tn[1], nz = tn[2];
+	double x1 = vl[0][0], x2 = vl[0][1];
+	double y1 = vl[1][0], y2 = vl[1][1];
+	double z1 = vl[2][0], z2 = vl[2][1];
+	double lx, ly, lz;
+
+	v->x = x1;
+	for (int ix = 1; ix <= nx; ix++)
+	{
+		double ps = 0;
+		lx = v->x;
+		v->x = lerp(x1, x2, (double)ix / nx);
+		v->y = y1;
+		for (int iy = 1; iy <= ny; iy++)
+		{
+			double zs = 0;
+			ly = v->y;
+			v->y = lerp(y1, y2, (double)iy / ny);
+			v->z = z1;
+			for (int iz = 1; iz <= nz; iz++)
+			{
+				lz = v->z;
+				v->z = lerp(z1, z2, (double)iz / nz);
+				if (boundary == NULL || boundary(vp.packed, 3)) zs += (v->z - lz) * f(vp.packed, 3);
+			}
+			ps += (v->y - ly) * zs;
+		}
+		s += (v->x - lx) * ps;
+	}
+	return s;
 }
 
-// Oblicza calke wielokrotna (funkcji n zmiennych) "nad" n wymiarowym hiperprostopadloscianem z predykatem wykluczajacym jego czesci (jezeli boundary != NULL).
+// Oblicza calke wielokrotna (funkcji n zmiennych) "nad" n wymiarowym hiperprostopadloscianem z predykatem wykluczajacym jego czesci (jezeli boundary != NULL)
 // Metoda prostokatow midpoint wzdluz kazdej zmiennej.
-void recur_quad_rect_mid(double *psum, FuncNvFp f, int variable_no, double tvariable[], const double variable_lim[][2], const int tn[], int level, BoundNvFp boundary) {
+void recur_quad_rect_mid(double *psum, FuncNvFp f, int vn, double vec[], const double vl[][2], const int tn[], int level, BoundNvFp boundary) {
+	if (level == vn) 
+	{
+		double du = 1;
+		for (int vi = 0; vi < vn; vi++)
+			du *= (vl[vi][1] - vl[vi][0]) / tn[vi];
+		if (boundary == NULL || boundary(vec, vn)) *psum += du * f(vec, vn);
+		return;
+	}
 
+	double n = tn[level];
+	double u1 = vl[level][0], u2 = vl[level][1];
+	for (int i = 1; i <= n; i++)
+	{
+		vec[level] = lerp(u1, u2, ((double)i - 0.5) / n);
+		recur_quad_rect_mid(psum, f, vn, vec, vl, tn, level + 1, boundary);
+	}
 }
 
 int main(void)
@@ -389,5 +451,4 @@ int main(void)
     }
     return 0;
 }
-
 
