@@ -32,7 +32,7 @@ double f_exp(double x) {  // Przyklad funkcji podcalkowej
 }
 
 double f_trig(double x) {  // Przyklad funkcji podcalkowej
-	return x * tan(x) - 1;
+	return x * tan(x);
 }
 
 // Obliczanie kwadratur złożonych dla funkcji jednej zmiennej
@@ -212,14 +212,13 @@ double dbl_integr_normal_1(Func2vFp f, double x1, double x2, int nx, double hy, 
 	double ex = x1, ey;
 	for (int ix = 1; ix <= nx; ix++)
 	{
-		double ys = 0;
-		
 		sx = ex;
 		ex = lerp(x1, x2, (double)ix / nx);
 
-		double y1 = fg(sx);
-		double y2 = fh(sx);
-		int ny = (y2 - y1) / hy;
+		double mx = (sx + ex) / 2;
+		double y1 = fg(mx);
+		double y2 = fh(mx);
+		int ny = ceil((y2 - y1) / hy);
 
 		ey = y1;
 
@@ -227,9 +226,9 @@ double dbl_integr_normal_1(Func2vFp f, double x1, double x2, int nx, double hy, 
 		{
 			sy = ey;	
 			ey = lerp(y1, y2, (double)iy / ny);
-			ys += (ey - sy) * f((sx + ex) / 2, (sy + ey) / 2);
+			s += (ex - sx) * (ey - sy) * f(mx, (sy + ey) / 2);
 		}
-		s += (ex - sx) * ys;
+		// s += (ex - sx) * ys;
 	}
 	return s;
 }
@@ -314,7 +313,7 @@ union vec3p
 // Oblicza calke potrojna "nad" prostopadloscianem z predykatem wykluczajacym jego czesci (jezeli boundary != NULL).
 // Metoda prostokatow wstecz (rightpoint) wzdluz kazdej zmiennej.
 double trpl_quad_rect(FuncNvFp f, const double vl[][2], const int tn[], BoundNvFp boundary) {     
-	// TODO dunno why result is different (not a precision issue) despite being right-point method
+	// TODO dunno why result is different (not a precision issue) despite it being right-point method
 	double s = 0;
 	union vec3p vp;
 	struct vec3 *v = &vp.vec;
