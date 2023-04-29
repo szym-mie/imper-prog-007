@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <math.h>
 
-#define E 
+#ifndef nan
+double nan(const char *tagp) { return (double)0xffffffff; }
+#endif
 
 #define TEST 1   // 1 - dla testowania, 0 - dla sprawdzarki
 
@@ -131,17 +133,21 @@ double quad_select(int func_no, int quad_no, double a, double b, int n) {
 
 // Algorytm adaptacyjny obliczania kwadratury,
 double recurs(Func1vFp f, double a, double b, double S, double delta, QuadratureFp quad, int level) {
-	double ss = quad(f, a, b, 2);
+	double c = (a + b) / 2;
+	double s1 = quad(f, a, c, 1);
+	double s2 = quad(f, c, b, 1);
+	double ss = s1 + s2;
+
 	if (ss <= S + delta && ss >= S - delta) return ss;
 	if (level > RECURS_LEVEL_MAX) return nan("");
-	double c = (a + b) / 2;
-	return recurs(f, a, c, S, delta / 2, quad, level + 1) + 
-		recurs(f, c, b, S, delta / 2, quad, level + 1);
+	
+	return recurs(f, a, c, s1, delta / 2, quad, level + 1) + 
+		recurs(f, c, b, s2, delta / 2, quad, level + 1);
 }
 
 // Funkcja inicjująca rekurencję
 double init_recurs(Func1vFp f, double a, double b, double delta, QuadratureFp quad) {
-	return recurs(f, a, b, 0, delta, quad, 0); 
+	return recurs(f, a, b, quad(f, a, b, 1), delta, quad, 0); 
 }
 
 ///////////////////////////////////////////////////////////////
@@ -173,14 +179,90 @@ double upper_bound2(double x) {
 
 // Metoda prostokatow (leftpoint) oblicza przyblizenie calki podwojnej nad obszarem prostokatnym
 double dbl_integr(Func2vFp f, double x1, double x2, int nx, double y1, double y2, int ny)  {
+	double s = 0;
+
+	double sx, sy;
+	double ex, ey = y1;
+	for (int iy = 1; iy <= ny; iy++)
+	{
+		double xs = 0;
+		sy = ey;
+		ey = lerp(y1, y2, (double)iy / ny);
+		ex = x1;
+
+		for (int ix = 1; ix <= nx; ix++)
+		{
+			sx = ex;
+			ex = lerp(x1, x2, (double)ix / nx);
+
+			xs += (ex - sx) * f(sx, sy);
+		}
+		s += (ey - sy) * xs;
+	}
+	return s;
 }
 
 // Oblicza kwadrature prostokatow midpoint dla calki podwojnej nad obszarem normalnym wzgledem osi 0x
 double dbl_integr_normal_1(Func2vFp f, double x1, double x2, int nx, double hy, Func1vFp fg, Func1vFp fh)  {
+	double s = 0;
+
+	double sx, sy;
+	double ex = x1, ey;
+	for (int ix = 1; ix <= nx; ix++)
+	{
+		double ys = 0;
+		
+		sx = ex;
+		ex = lerp(x1, x2, (double)ix / nx);
+
+		double y1 = fg(sx);
+		double y2 = fh(sx);
+		int ny = (y2 - y1) / hy;
+
+		ey = y1;
+
+		for (int iy = 1; iy <= ny; iy++)
+		{
+			sy = ey;	
+			ey = lerp(y1, y2, (double)iy / ny);
+			ys += (ey - sy) * f((sx + ex) / 2, (sy + ey) / 2);
+		}
+		s += (ex - sx) * ys;
+	}
+	return s;
 }
 
 // Oblicza kwadrature prostokatow leftpoint dla calki podwojnej nad obszarami normalnymi wzgledem osi 0x 
 double dbl_integr_normal_n(Func2vFp f, double x1, double x2, int nx, double y1, double y2, int ny, Func1vFp fg, Func1vFp fh)  {
+	double s = 0;
+
+	double hy = (y2 - y1) / ny;
+	double sx, sy;
+	double ex = x1, ey;
+	for (int ix = 1; ix <= nx; ix++)
+	{
+		double ys = 0;
+		sx = ex;
+		ex = lerp(x1, x2, (double)ix / nx);
+
+		double my1 = fg(sx);
+		if (my1 < y1) my1 = y1;
+		double my2 = fh(sx);
+		if (my2 > y2) my2 = y2;
+
+		int mny = ceil((my2 - my1) / hy);
+
+		ey = my1;
+
+		for (int iy = 1; iy <= mny; iy++)
+		{
+			sy = ey;
+			ey = lerp(my1, my2, (double)iy / mny);
+			ys += (ey - sy) * f(sx, sy);
+		}
+		s += (ex - sx) * ys;
+	}
+	return s;
 }
 
 ///////////////////////////////////////////////////////////////
@@ -219,11 +301,13 @@ int boundNv(const double v[], int n) {
 // Oblicza calke potrojna "nad" prostopadloscianem z predykatem wykluczajacym jego czesci (jezeli boundary != NULL).
 // Metoda prostokatow wstecz (rightpoint) wzdluz kazdej zmiennej.
 double trpl_quad_rect(FuncNvFp f, const double variable_lim[][2], const int tn[], BoundNvFp boundary) {     
+
 }
 
 // Oblicza calke wielokrotna (funkcji n zmiennych) "nad" n wymiarowym hiperprostopadloscianem z predykatem wykluczajacym jego czesci (jezeli boundary != NULL).
 // Metoda prostokatow midpoint wzdluz kazdej zmiennej.
 void recur_quad_rect_mid(double *psum, FuncNvFp f, int variable_no, double tvariable[], const double variable_lim[][2], const int tn[], int level, BoundNvFp boundary) {
+
 }
 
 int main(void)
