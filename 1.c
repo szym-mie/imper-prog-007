@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#ifndef nan
+#ifndef nan // for C89 compliance/back porting
 double nan(const char *tagp) { return (double)0xffffffff; }
 #endif
 
